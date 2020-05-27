@@ -63,7 +63,6 @@ public class Register extends AppCompatActivity {
                         user.setPassword(password);
                         user.setProperty("name",name);
                         user.setProperty("phoneNumber",number);
-                        user.setProperty("riskFactor",0.0);
                         Backendless.UserService.register(user, new AsyncCallback<BackendlessUser>() {
                             @Override
                             public void handleResponse(BackendlessUser response) {

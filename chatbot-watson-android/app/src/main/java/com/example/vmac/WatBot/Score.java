@@ -4,7 +4,9 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -46,7 +48,7 @@ public class Score extends AppCompatActivity {
     List<LocationsData> list=new ArrayList<>();
     HashSet<String> set=new HashSet<>();
     String email=ApplicationClass.user.getEmail();
-    double riskFactor=0.0;
+    double riskFactor=0.2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,19 +68,34 @@ public class Score extends AppCompatActivity {
         Backendless.Persistence.of(LocationsData.class).find(queryBuilder, new AsyncCallback<List<LocationsData>>() {
             @Override
             public void handleResponse(List<LocationsData> response) {
-                list=response;
+                list = response;
                 // list variable contains the all the objects;
-                for(int i=0;i<list.size();i++)
-                {
-                    String email2=list.get(i).getUserEmail();
-                    if(!email2.equals(email) && !set.contains(email2))
-                    {
+                for (int i = 0; i < list.size(); i++) {
+                    String email2 = list.get(i).getUserEmail();
+                    if (!email2.equals(email) && !set.contains(email2)) {
                         set.add(email2);
-                        riskFactor = riskFactor+list.get(i).getRiskFactor();
+                        riskFactor = riskFactor + list.get(i).getRiskFactor();
                     }
                 }
-            }
+                riskFactor /= set.size();
+                Log.i("riskFactor", "" + riskFactor);
+                DataQueryBuilder queryBuilder;
+                queryBuilder = DataQueryBuilder.create();
+                String whereClause = "location='" + ApplicationClass.Location + "'";
+                queryBuilder.setWhereClause(whereClause);
+                Backendless.Persistence.of(RiskFactorTable.class).find(queryBuilder, new AsyncCallback<List<RiskFactorTable>>() {
+                    @Override
+                    public void handleResponse(List<RiskFactorTable> response) {
+                        riskFactor = Math.max(riskFactor, response.get(0).getRiskFactor());
+                        Log.i("riskfactor", "" + response.get(0).getRiskFactor());
+                    }
 
+                    @Override
+                    public void handleFault(BackendlessFault fault) {
+                        //do Nothing
+                    }
+                });
+            }
             @Override
             public void handleFault(BackendlessFault fault) {
                 Toast.makeText(Score.this,fault.toString(),Toast.LENGTH_LONG).show();
@@ -87,8 +104,35 @@ public class Score extends AppCompatActivity {
             }
         });
         showProgress(true);
-        if(flag) createRecord();
-        tvriskScore.setText("Your Risk Score is -"+ riskFactor/set.size());
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                tvriskScore.setText("Your Risk Score is -"+ riskFactor);
+                if(Double.compare(riskFactor, 0.3)<=0)
+                {
+                    tvriskScore.setTextColor(Color.GREEN);
+                }
+                else if(Double.compare(riskFactor, 0.65)>0)
+                {
+                    tvriskScore.setTextColor(Color.RED);
+                }
+                else if(Double.compare(riskFactor, 0.5)>0)
+                {
+                    tvriskScore.setTextColor(Color.MAGENTA);
+                }
+                else
+                {
+                    tvriskScore.setTextColor(Color.YELLOW);
+                }
+                if(flag) createRecord();
+
+            }
+        }, 1000);
+
+
+
     }
 
     public void createRecord()
@@ -96,8 +140,8 @@ public class Score extends AppCompatActivity {
         LocationsData loc=new LocationsData();
         loc.setUserEmail(ApplicationClass.user.getEmail());
         loc.setLocation(ApplicationClass.Location);
-        loc.setRiskFactor(riskFactor/set.size());
-        Backendless.Data.of(LocationsData.class).save(loc, new AsyncCallback<LocationsData>() {
+        loc.setRiskFactor(riskFactor);
+        Backendless.Persistence.of(LocationsData.class).save(loc, new AsyncCallback<LocationsData>() {
             @Override
             public void handleResponse(LocationsData response) {
                 Toast.makeText(Score.this,"Location Fetched",Toast.LENGTH_SHORT).show();
@@ -109,6 +153,7 @@ public class Score extends AppCompatActivity {
                 showProgress(false);
             }
         });
+
 
     }
 

@@ -261,6 +261,7 @@ public class StartPage extends AppCompatActivity {
                 if (addresses.size() > 0) {
                     Log.i("Current location",""+addresses.get(0).getFeatureName() + ", " + addresses.get(0).getLocality() +", " + addresses.get(0).getAdminArea() + ", " + addresses.get(0).getCountryName());
                     geoLocation = addresses.get(0).getLocality();
+                    showProgress(false);
                 }
             }
         } catch (IOException e) {
