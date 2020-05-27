@@ -96,7 +96,7 @@ public class Score extends AppCompatActivity {
         LocationsData loc=new LocationsData();
         loc.setUserEmail(ApplicationClass.user.getEmail());
         loc.setLocation(ApplicationClass.Location);
-        loc.setRiskFactor(((Integer) ApplicationClass.user.getProperty("riskFactor"))/1.0);
+        loc.setRiskFactor(riskFactor/set.size());
         Backendless.Data.of(LocationsData.class).save(loc, new AsyncCallback<LocationsData>() {
             @Override
             public void handleResponse(LocationsData response) {
